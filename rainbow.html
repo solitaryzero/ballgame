@@ -25,12 +25,25 @@
 	return pd;
 	}
 	
-	function Block(){
+	function Block(tx,ty,tcolor){
 	var blk = {};
-	blk.x = 50;
-	blk.y = 20;
-	blk.height = 20;
-	blk.width = 40;
+	if (!tx) {
+		blk.x = 50;
+	} else {
+		blk.x = tx;
+	}
+	if (!ty){
+		blk.y = 20;
+	} else {
+		blk.y = ty;
+	}
+	if (!tcolor){
+		blk.colour = "#0000ff";
+	} else {
+		blk.colour = tcolor;
+	}
+	blk.height = 2;
+	blk.width = 2;
 	blk.lives = 1;
 	blk.colour = "#00ff00";
 	
@@ -42,14 +55,41 @@
 	return blk;
 	}
 	
-	function Ball(){
+	function Ball(tx,ty,tcolor,tsx,tsy){
 	var b = {};
-	b.x = 150;
-	b.y = 250;
-	b.height = 10;
-	b.width = 10;
-	b.speedx = -3;
-	b.speedy = -3;
+	if (!tx) {
+		b.x = 150;
+	} else {
+		b.x = tx;
+	}
+	
+	if (!ty){
+		b.y = 250;
+	} else {
+		b.y = ty;
+	}
+	
+	if (!tcolor){
+		b.colour = "#0000ff";
+	} else {
+		b.colour = tcolor;
+	}
+	
+	if (!tsx) {
+		b.speedx = -2;
+	} else {
+		b.speedx = tsx;
+	}
+	if (!tsy){
+		b.speedy = -2;
+	} else {
+		b.speedy = tsy;
+	}
+		
+	b.height = 2;
+	b.width = 2;
+	b.alive = true;
+	b.paused = true;
 	b.colour = "#0000ff";
 	
 	b.reflectx = function(){
@@ -92,13 +132,20 @@
 	}
 	
 	b.move = function(){
+	if (!b.alive) {return;}
+	if (b.paused) {
+		b.paused = false;
+		return;
+	}
 	if ((b.x < 0) || (b.x > 400)) b.reflectx();
-	if ((b.y < 0) || (b.y > 400)) b.reflecty();
+	if (b.y < 0) b.reflecty();
+	if (b.y > 400) b.alive = false;
 	b.x += b.speedx; 
 	b.y += b.speedy;
 	}
 	
 	b.draw = function(cxt){
+		if (!b.alive) {return;}
 		cxt.fillStyle = b.colour;
 		cxt.fillRect(b.x,b.y,b.width,b.height);
 	}
@@ -107,21 +154,24 @@
 	}
 	
 	var log = console.log.bind(console);
-	//log("hello world");
 	
 	var c = document.getElementById("myCanvas");
 	var cxt = c.getContext("2d");
 	var p = new Paddle();
 	var blocks = new Array();
-	var blockNum = 10;
-	for (var i=0;i<blockNum;i++)
+	var blockWNum = 50;
+	var blockHNum = 50;
+	for (var i=0;i<blockWNum;i++)
 	{
-		var b = new Block();
-		b.x = 10+(i%5)*80;
-		b.y += Math.floor(i/5)*40;
-		blocks[i] = b;
+		for (var j=0;j<blockHNum;j++)
+		{
+			var b = new Block(i*5,j*3);
+			blocks[i*blockHNum+j] = b;
+		}
 	}
-	var bl = new Ball()
+	var balls = new Array();
+	var bl = new Ball();
+	balls.push(bl);
 	
 	eventRegister = {};
 	
@@ -150,21 +200,27 @@
 	score = 0;
 	
 	setInterval(function(){
+		log(balls.length);
 		if (eventRegister.a) p.moveleft();
 		if (eventRegister.d) p.moveright();
-		bl.move();
-		bl.collide(p);
-		for (var i=0;i<blockNum;i++)
-		{
-			bl.collide(blocks[i]);
-		}
+		
 		cxt.clearRect(0,0,c.width,c.height);
 		p.draw(cxt);
-		for (var i=0;i<blockNum;i++)
-		{
-			blocks[i].draw(cxt);
+		for (var i=0;i<balls.length;i++)
+		{	
+			bl = balls[i];
+			bl.move();
+			bl.collide(p);
+			for (var j=0;j<blockWNum*blockHNum;j++)
+			{
+				if (bl.collide(blocks[j])){
+					var t = new Ball(blocks[j].x,blocks[j].y,blocks[j].colour,bl.speedx,bl.speedy);
+					balls.push(t);
+				}
+			}
+			bl.draw(cxt);
 		}
-		bl.draw(cxt);
+		for (var i=0;i<blockWNum*blockHNum;i++) {blocks[i].draw(cxt);}
 	},1000/60);
 	
 	</script>
